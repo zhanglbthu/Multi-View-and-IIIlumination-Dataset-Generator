@@ -16,11 +16,10 @@ DEPTH_SCALE = 1.4
 COLOR_DEPTH = 32
 FORMAT = 'OPEN_EXR'
 RANDOM_VIEWS = True
-FIX_VIEWS = True
+FIX_VIEWS = False
 UPPER_VIEWS = True
-RANDOM_CAMERA = True
+RANDOM_CAMERA = False
 LIGHT_TYPE = 'SUN'
-
 
 fp = bpy.path.abspath(f"//{RESULTS_PATH}")
 

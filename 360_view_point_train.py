@@ -11,7 +11,7 @@ DEBUG = False
             
 VIEWS = 100
 RESOLUTION = 800
-RESULTS_PATH = 'train'
+# RESULTS_PATH = 'train'
 DEPTH_SCALE = 1.4
 COLOR_DEPTH = 32
 FORMAT = 'OPEN_EXR'
@@ -19,7 +19,11 @@ RANDOM_VIEWS = True
 FIX_VIEWS = False
 UPPER_VIEWS = True
 RANDOM_CAMERA = False
-LIGHT_TYPE = 'POINT'
+
+import sys
+LIGHT_TYPE = sys.argv[-1]
+print("LIGHT_TYPE: {}".format(LIGHT_TYPE))
+RESULTS_PATH = 'train_{}'.format(LIGHT_TYPE)
 
 fp = bpy.path.abspath(f"//{RESULTS_PATH}")
 
@@ -241,7 +245,7 @@ def render_multiview_multilight():
                     b_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
                 
         if RANDOM_CAMERA:
-            scene.render.filepath = fp + '/r_' + str(i)
+            scene.render.filepath = fp + '/image' + '/r_' + str(i)
             if UPPER_VIEWS:
                 rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
                 rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
@@ -250,7 +254,7 @@ def render_multiview_multilight():
                 p_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
         else:
             print("Rotation {}, {}".format((stepsize * i), radians(stepsize * i)))
-            scene.render.filepath = fp + '/r_{0:03d}'.format(int(i * stepsize))
+            scene.render.filepath = fp + '/image' + '/r_{0:03d}'.format(int(i * stepsize))
 
         # if not DEBUG:
             # depth_file_output.file_slots[0].path = scene.render.filepath + "_depth_"
@@ -280,7 +284,7 @@ def render_multiview_multilight():
             p_empty.rotation_euler[2] += radians(stepsize)
 
     if not DEBUG:
-        with open(fp + '/../' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
+        with open(fp + '/' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
             json.dump(out_data, out_file, indent=4)
 
 def render_multiview_singlelight():
@@ -295,7 +299,7 @@ def render_multiview_singlelight():
                     b_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
                 
         print("Rotation {}, {}".format((stepsize * i), radians(stepsize * i)))
-        scene.render.filepath = fp + '/r_{0:03d}'.format(int(i * stepsize))
+        scene.render.filepath = fp + '/image' + '/r_{0:03d}'.format(int(i * stepsize))
 
         # if not DEBUG:
             # depth_file_output.file_slots[0].path = scene.render.filepath + "_depth_"
@@ -315,7 +319,7 @@ def render_multiview_singlelight():
         out_data['frames'].append(frame_data)
 
     if not DEBUG:
-        with open(fp + '/../' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
+        with open(fp + '/' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
             json.dump(out_data, out_file, indent=4)
             
 render_multiview_singlelight()

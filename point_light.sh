@@ -1,8 +1,9 @@
 #!/bin/bash
 
 blender_path="/root/blender-3.6.5-linux-x64/blender"
-objs=("ship_specular_point")
+objs=("hotdog_specular_point")
 gpus=(0)
+light_type="POINT"
 
 cur_idx=0
 
@@ -17,5 +18,5 @@ for obj in "${objs[@]}"; do
     rm -rf test_one
     rm -rf floor
 
-    "${blender_path}" --background --factory-startup main.blend --python ../../360_view_point_train.py
+    "${blender_path}" --background --factory-startup main.blend --python ../../360_view_point_train.py -- "${light_type}"
 done
