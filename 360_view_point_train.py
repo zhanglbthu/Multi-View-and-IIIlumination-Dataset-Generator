@@ -16,11 +16,10 @@ DEPTH_SCALE = 1.4
 COLOR_DEPTH = 32
 FORMAT = 'OPEN_EXR'
 RANDOM_VIEWS = True
-FIX_VIEWS = True
+FIX_VIEWS = False
 UPPER_VIEWS = True
-RANDOM_CAMERA = True
+RANDOM_CAMERA = False
 LIGHT_TYPE = 'POINT'
-
 
 fp = bpy.path.abspath(f"//{RESULTS_PATH}")
 
@@ -220,6 +219,7 @@ scene.render.image_settings.file_format = 'PNG'  # set output format to .png
 
 from math import radians
 
+
 stepsize = 360.0 / VIEWS
 rotation_mode = 'XYZ'
 
@@ -229,55 +229,93 @@ if not DEBUG:
 
 out_data['frames'] = []
 
-for i in range(0, VIEWS):
-    if not FIX_VIEWS:
-        if RANDOM_VIEWS:
+def render_multiview_multilight():
+    for i in range(0, VIEWS):
+        if not FIX_VIEWS:
+            if RANDOM_VIEWS:
+                if UPPER_VIEWS:
+                    rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
+                    rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
+                    b_empty.rotation_euler = rot
+                else:
+                    b_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
+                
+        if RANDOM_CAMERA:
+            scene.render.filepath = fp + '/r_' + str(i)
             if UPPER_VIEWS:
                 rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
                 rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
-                b_empty.rotation_euler = rot
+                p_empty.rotation_euler = rot
             else:
-                b_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
-            
-    if RANDOM_CAMERA:
-        scene.render.filepath = fp + '/r_' + str(i)
-        if UPPER_VIEWS:
-            rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
-            rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
-            p_empty.rotation_euler = rot
+                p_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
         else:
-            p_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
-    else:
+            print("Rotation {}, {}".format((stepsize * i), radians(stepsize * i)))
+            scene.render.filepath = fp + '/r_{0:03d}'.format(int(i * stepsize))
+
+        # if not DEBUG:
+            # depth_file_output.file_slots[0].path = scene.render.filepath + "_depth_"
+            # normal_file_output.file_slots[0].path = scene.render.filepath + "_normal_"
+
+        if DEBUG:
+            break
+        else:
+            bpy.ops.render.render(write_still=True)  # render still
+
+        frame_data = {
+            'file_path': os.path.relpath(scene.render.filepath, f'{fp}/..'),
+            'rotation': radians(stepsize),
+            'transform_matrix': listify_matrix(cam.matrix_world),
+            'transform_matrix_sun': listify_matrix(sun_light.matrix_world),
+        }
+        out_data['frames'].append(frame_data)
+
+        if RANDOM_CAMERA:
+            if UPPER_VIEWS:
+                rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
+                rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
+                p_empty.rotation_euler = rot
+            else:
+                p_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
+        else:
+            p_empty.rotation_euler[2] += radians(stepsize)
+
+    if not DEBUG:
+        with open(fp + '/../' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
+            json.dump(out_data, out_file, indent=4)
+
+def render_multiview_singlelight():
+    for i in range(0, VIEWS):
+        if not FIX_VIEWS:
+            if RANDOM_VIEWS:
+                if UPPER_VIEWS:
+                    rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
+                    rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
+                    b_empty.rotation_euler = rot
+                else:
+                    b_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
+                
         print("Rotation {}, {}".format((stepsize * i), radians(stepsize * i)))
         scene.render.filepath = fp + '/r_{0:03d}'.format(int(i * stepsize))
 
-    # if not DEBUG:
-        # depth_file_output.file_slots[0].path = scene.render.filepath + "_depth_"
-        # normal_file_output.file_slots[0].path = scene.render.filepath + "_normal_"
+        # if not DEBUG:
+            # depth_file_output.file_slots[0].path = scene.render.filepath + "_depth_"
+            # normal_file_output.file_slots[0].path = scene.render.filepath + "_normal_"
 
-    if DEBUG:
-        break
-    else:
-        bpy.ops.render.render(write_still=True)  # render still
-
-    frame_data = {
-        'file_path': os.path.relpath(scene.render.filepath, f'{fp}/..'),
-        'rotation': radians(stepsize),
-        'transform_matrix': listify_matrix(cam.matrix_world),
-        'transform_matrix_sun': listify_matrix(sun_light.matrix_world),
-    }
-    out_data['frames'].append(frame_data)
-
-    if RANDOM_CAMERA:
-        if UPPER_VIEWS:
-            rot = np.random.uniform(0, 1, size=3) * (1,0,2*np.pi)
-            rot[0] = np.abs(np.arccos(1 - 2 * rot[0]) - np.pi/2)
-            p_empty.rotation_euler = rot
+        if DEBUG:
+            break
         else:
-            p_empty.rotation_euler = np.random.uniform(0, 2*np.pi, size=3)
-    else:
-        p_empty.rotation_euler[2] += radians(stepsize)
+            bpy.ops.render.render(write_still=True)  # render still
 
-if not DEBUG:
-    with open(fp + '/../' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
-        json.dump(out_data, out_file, indent=4)
+        frame_data = {
+            'file_path': os.path.relpath(scene.render.filepath, f'{fp}/..'),
+            'rotation': radians(stepsize),
+            'transform_matrix': listify_matrix(cam.matrix_world),
+            'transform_matrix_sun': listify_matrix(sun_light.matrix_world),
+        }
+        out_data['frames'].append(frame_data)
+
+    if not DEBUG:
+        with open(fp + '/../' + f'transforms_{RESULTS_PATH}.json', 'w') as out_file:
+            json.dump(out_data, out_file, indent=4)
+            
+render_multiview_singlelight()
